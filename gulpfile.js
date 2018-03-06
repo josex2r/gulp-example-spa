@@ -6,22 +6,23 @@ const buffer = require('vinyl-buffer');
 const babelify = require('babelify');
 const connect = require('gulp-connect');
 const source = require('vinyl-source-stream');
-var autoprefixer = require('gulp-autoprefixer'),
-    minifycss = require('gulp-minify-css'),
-    eslint = require('gulp-eslint'),
-    uglify = require('gulp-uglify'),
-    imagemin = require('gulp-imagemin'),
-    rename = require('gulp-rename'),
-    clean = require('gulp-clean'),
-    concat = require('gulp-concat'),
-    cache = require('gulp-cache');
+const sass = require('gulp-sass');
+const autoprefixer = require('gulp-autoprefixer');
+const cleanCss = require('gulp-clean-css');
+const eslint = require('gulp-eslint');
+const uglify = require('gulp-uglify');
+const imagemin = require('gulp-imagemin');
+const rename = require('gulp-rename');
+const clean = require('gulp-clean');
+const cache = require('gulp-cache');
+const concat = require('gulp-concat');
+const runSequence = require('run-sequence');
+const open = require('open');
 
 // Lint javascript
 gulp.task('lint', () => {
   return gulp.src([
-      'src/index.js',
-      'src/components/**/*.js',
-      'src/lib/**/*.js'
+      'src/**/*.js'
     ])
     .pipe(eslint())
     .pipe(eslint.format())
@@ -38,8 +39,28 @@ gulp.task('public', () => {
 });
 
 // Styles
-gulp.task('styles');
-
+gulp.task('styles', () => {
+  return gulp.src([
+    'src/styles/index.scss'
+    ])
+    .pipe(sass().on('error', sass.logError))
+    .pipe(rename({
+      basename: 'app'
+    }))
+    .pipe(autoprefixer({
+      browsers: ['last 10 versions'],
+      cascade: false
+    }))
+    .pipe(cleanCss({
+      compatibility: 'ie8'
+    }))
+    .pipe(gulp.dest('dist/styles'))
+    .pipe(rename({
+      suffix: '.min'
+    }))
+    .pipe(connect.reload())
+    .pipe(gulp.dest('dist/styles'))
+});
 
 // Vendor
 gulp.task('vendor', () => {
@@ -55,7 +76,7 @@ gulp.task('vendor', () => {
 });
 
 // Scripts
-gulp.task('scripts', () => {
+gulp.task('scripts', ['lint'], () => {
   return browserify({
       entries: './src/index.js',
       extensions: ['.js'],
@@ -69,7 +90,9 @@ gulp.task('scripts', () => {
     .pipe(source('app.js'))
     .pipe(buffer())
     .pipe(gulp.dest('dist/scripts'))
-    .pipe(rename({ suffix: '.min' }))
+    .pipe(rename({
+      suffix: '.min'
+    }))
     .pipe(uglify())
     .pipe(connect.reload())
     .pipe(gulp.dest('dist/scripts'));
@@ -79,10 +102,9 @@ gulp.task('scripts', () => {
 gulp.task('images', () => {
   return gulp.src('src/images/**/*')
     .pipe(cache(imagemin({
-        optimizationLevel: 3, 
-        progressive: true, 
-        interlaced: true
-        
+      optimizationLevel: 3, 
+      progressive: true, 
+      interlaced: true
     })))
     .pipe(connect.reload())
     .pipe(gulp.dest('dist/images'));
@@ -94,44 +116,49 @@ gulp.task('clean', () => {
     .pipe(clean());
 });
 
-// Default task
-gulp.task('default', ['clean'], () => {
-    gulp.run('styles', 'scripts', 'images', 'public', 'vendor');
+// Build App
+gulp.task('build', ['clean'], (callback) => {
+  runSequence(
+    ['public', 'vendor', 'images'],
+    'styles',
+    'scripts',
+    callback
+  );
 });
 
-// Server task
-gulp.task('server', ['default'], () => {
-    gulp.run('watch');
-});
+// Default task
+gulp.task('default', ['build']);
 
 // Watch
-gulp.task('watch', () => {
-  connect.server({
-    root: 'dist',
-    livereload: true
-  });
-
+gulp.task('server', ['build'], () => {
   // Watch .scss files
   gulp.watch('src/styles/**/*.scss', (event) => {
-    console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+    console.log(`File ${event.path} was ${event.type}, running tasks...`);
     gulp.run('styles');
   });
 
   // Watch .js files
   gulp.watch('src/**/*.js', (event) => {
-    console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+    console.log(`File ${event.path} was ${event.type}, running tasks...`);
     gulp.run('scripts');
   });
 
   // Watch image files
   gulp.watch('src/images/**/*', (event) => {
-    console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+    console.log(`File ${event.path} was ${event.type}, running tasks...`);
     gulp.run('images');
   });
 
   // Watch public assets
   gulp.watch('public/**/*', (event) => {
-    console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+    console.log(`File ${event.path} was ${event.type}, running tasks...`);
     gulp.run('public');
   });
+
+  connect.server({
+    root: 'dist',
+    livereload: true
+  });
+
+  open('http://localhost:8080');
 });

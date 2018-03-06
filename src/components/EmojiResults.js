@@ -10,7 +10,7 @@ class EmojiResults extends PureComponent {
   }
 
   componentWillUnmount() {
-    this.clipboard.destroy();
+    this.clipboard.destroy()
   }
 
   render() {
@@ -20,8 +20,7 @@ class EmojiResults extends PureComponent {
               <EmojiResultRow
                 key={emojiData.title}
                 symbol={emojiData.symbol}
-                title={emojiData.title}
-              />
+                title={emojiData.title}/>
           )}
       </div>
     );

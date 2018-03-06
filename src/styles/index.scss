@@ -1,11 +1,16 @@
+@import './components/App.scss';
+@import './components/EmojiResultRow.scss';
+@import './components/Headers.scss';
+@import './components/SearchInput.scss';
+
 body {
   margin: 0;
   padding: 0;
   font-family: sans-serif;
-}
 
-body .github-fork-ribbon:before {
-  background-color: #333;
+  & > .github-fork-ribbon:before {
+    background-color: #333;
+  }
 }
 
 @media screen and (max-width: 500px) {

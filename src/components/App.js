@@ -9,7 +9,7 @@ class App extends PureComponent {
     super(props);
     this.state = {
       filteredEmoji: filterEmoji('', 20),
-    };
+    }
   }
 
   handleSearchChange(event) {
@@ -23,7 +23,7 @@ class App extends PureComponent {
       <div>
         <Header/>
         <SearchInput
-          textChange={this.handleSearchChange}
+          textChange={this.handleSearchChange.bind(this)}
         />
         <EmojiResults
           emojiData={this.state.filteredEmoji}
